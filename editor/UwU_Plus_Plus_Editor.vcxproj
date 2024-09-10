@@ -8,7 +8,7 @@
     <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
     <MinimalCoreWin>true</MinimalCoreWin>
     <ProjectGuid>{a7bd029f-76b6-41d1-92fa-fc86ec8662d2}</ProjectGuid>
-    <ProjectName>UwUplusplus</ProjectName>
+    <ProjectName>UwU_Plus_Plus_IDE</ProjectName>
     <RootNamespace>UwUplusplus</RootNamespace>
     <!--
       $(TargetName) should be same as $(RootNamespace) so that the produced binaries (.exe/.pri/etc.)
@@ -161,6 +161,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\interpreter\UwU_Plus_Plus_Interpreter.vcxproj">
+      <Project>{68ebe140-cf5a-42e1-85b1-588c1ef618ac}</Project>
+    </ProjectReference>
   </ItemGroup>
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
