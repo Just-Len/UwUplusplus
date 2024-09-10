@@ -201,8 +201,8 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 					size_t end_index = index;
 					bool dot_found = false;
 
-					std::optional<char> opt = iterator_next(input_iterator, input_left.end());
-					do {
+					std::optional<char> opt;
+					while ((opt = iterator_next(input_iterator, input_left.end())).has_value()) {
 						char next_character = opt.value();
 
 						if (next_character == '.') {
@@ -219,7 +219,7 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 						else {
 							break;
 						}
-					} while ((opt = iterator_next(input_iterator, input_left.end())).has_value());
+					}
 
 					if (input_left[end_index] == '.') {
 						end_index -= 1;
