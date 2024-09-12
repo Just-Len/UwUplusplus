@@ -5,7 +5,11 @@
 #include <string_view>
 #include <vector>
 
-typedef std::tuple<size_t, std::string> TokenizerError;
+struct TokenizerError
+{
+	size_t		line_number;
+	std::string	error_message;
+};
 
 template <typename T, typename E>
 struct Result
@@ -137,13 +141,13 @@ public:
 		index(0)
 	{ }
 
-	std::vector<Result<Token, TokenizerError>> process();
+    std::vector<Result<Token, TokenizerError>> process();
 
 	void process_token_kind(std::vector<Result<Token, TokenizerError>> &tokens, TokenKind token_kind, std::string_view original) const;
 
 	std::optional<std::tuple<char, TokenKind, Token>> get_continuation_token(TokenKind token_kind, std::string_view original) const;
 
-	void print(const std::vector<Result<Token, TokenizerError>> &tokens) const;
+    void print(const std::vector<Result<Token, TokenizerError>> &tokens) const;
 
 	std::optional<double> parse_number(std::string_view number_string) const;
 };

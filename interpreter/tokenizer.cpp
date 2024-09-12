@@ -10,7 +10,7 @@
 
 #include "tokenizer.h"
 
-std::optional<char> iterator_next(const char *&start, const char *end)
+std::optional<char> iterator_next(std::string_view::const_iterator &start, std::string_view::const_iterator end)
 {
 	if (start != end) {
 		char character = *start;
@@ -144,7 +144,7 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 					default: 
 						std::stringstream message;
 						message << "Unexpected character: " << character;
-						Result<Token, TokenizerError> result(TokenizerError(line_number, message.str()));
+						Result<Token, TokenizerError> result(TokenizerError { line_number, message.str() });
 						tokens.push_back(std::move(result));
 						this->index += 1;
 						continue;
@@ -165,7 +165,8 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 						this->index += 2;
 					}
 					else if (continuation_token.has_value()) {
-						Result<Token, TokenizerError> result(std::get<2>(continuation_token.value()));
+						auto &tuple = continuation_token.value();
+						Result<Token, TokenizerError> result(std::get<2>(tuple));
 						tokens.push_back(std::move(result));
 						this->index += 1;
 					}
@@ -194,6 +195,7 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 					}
 
 					this->index += word.length();
+					break;
 				}
 
 				case Initial::Number:
@@ -241,7 +243,7 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 						this->index += string_value.length();
 					}
 					else {
-						Result<Token, TokenizerError> result(TokenizerError(line_number, "Unterminated string."));
+						Result<Token, TokenizerError> result(TokenizerError { line_number, "Unterminated string." });
 						tokens.push_back(std::move(result));
 						this->index += input_left.length();
 					}
@@ -299,7 +301,7 @@ void Tokenizer::print(const std::vector<Result<Token, TokenizerError>> &tokens) 
 		if (!token_result.is_ok) {
 			const TokenizerError &error = token_result.error;
 
-			fprintf(stderr, "[line %lu] Error: %s\n", std::get<0>(error), std::get<1>(error).c_str());
+			fprintf(stderr, "[line %lu] Error: %s\n", error.line_number, error.error_message.c_str());
 			continue;
 		}
 
