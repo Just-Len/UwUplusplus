@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UwU_Plus_Plus_IDE", "editor
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UwU_Plus_Plus_Interpreter", "interpreter\UwU_Plus_Plus_Interpreter.vcxproj", "{68EBE140-CF5A-42E1-85B1-588C1EF618AC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Uwu_Plus_Plus_CLI", "cli\Uwu_Plus_Plus_CLI.vcxproj", "{53F3DF34-7C03-4DBC-B75E-74A19EAC34D9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UwU_Plus_Plus_CLI", "cli\UwU_Plus_Plus_CLI.vcxproj", "{53F3DF34-7C03-4DBC-B75E-74A19EAC34D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
