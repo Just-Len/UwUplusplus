@@ -5,95 +5,12 @@
 #include <string_view>
 #include <vector>
 
+#include "result.h"
+
 struct TokenizerError
 {
 	size_t		line_number;
 	std::string	error_message;
-};
-
-template <typename T, typename E>
-struct Result
-{
-	bool is_ok;
-	union
-	{
-		T value;
-		E error;
-	};
-
-	Result<T, E>(T &value) : is_ok(true)
-	{
-		new(&this->value) T(value);
-	}
-
-	Result<T, E>(E &error) : is_ok(false)
-	{
-		new(&this->error) E(error);
-	}
-
-    Result(T&& value) : is_ok(true)
-    {
-        new(&this->value) T(std::move(value));
-    }
-
-    Result(E&& error) : is_ok(false)
-    {
-        new(&this->error) E(std::move(error));
-    }
-
-    ~Result()
-    {
-        if (is_ok)
-        {
-            value.~T();
-        }
-        else
-        {
-            error.~E();
-        }
-    }
-
-    Result(const Result&) = delete;
-    Result& operator=(const Result&) = delete;
-
-	Result(Result&& other) noexcept : is_ok(other.is_ok)
-    {
-        if (is_ok)
-        {
-            new(&value) T(std::move(other.value));
-        }
-        else
-        {
-            new(&error) E(std::move(other.error));
-        }
-    }
-
-    Result& operator=(Result&& other) noexcept
-    {
-        if (this != &other)
-        {
-            if (is_ok)
-            {
-                value.~T();
-            }
-            else
-            {
-                error.~E();
-            }
-
-            is_ok = other.is_ok;
-            if (is_ok)
-            {
-                new(&value) T(std::move(other.value));
-            }
-            else
-            {
-                new(&error) E(std::move(other.error));
-            }
-        }
-
-        return *this;
-    }
 };
 
 enum TokenKind

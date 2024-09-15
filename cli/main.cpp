@@ -1,5 +1,6 @@
 #include <cstring>
 #include <fstream>
+
 #include "tokenizer.h"
 
 std::optional<const char*> next_arg(const char **&args, int &argsCount)
@@ -45,7 +46,7 @@ int main(int argsCount, const char **args)
 			auto tokens = tokenizer.process();
 
 			for (auto &token : tokens) {
-				if (!token.is_ok) {
+				if (!token.is_ok()) {
 					exit_code = 65;
 					break;
 				}

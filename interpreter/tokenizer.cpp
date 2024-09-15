@@ -8,18 +8,8 @@
 #include <ostream>
 #include <sstream>
 
+#include "string_iterator.h"
 #include "tokenizer.h"
-
-std::optional<char> iterator_next(std::string_view::const_iterator &start, std::string_view::const_iterator end)
-{
-	if (start != end) {
-		char character = *start;
-		start += 1;
-		return std::optional(character);
-	}
-
-	return std::nullopt;
-}
 
 std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 {
@@ -27,28 +17,28 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 	size_t line_number = 0;
 
 	while (true) {
-		size_t index = 0;
 		std::string_view input_left = this->input.substr(this->index);
-		auto input_iterator = input_left.begin();
+		StringIterator input_iterator(input_left);
 
-		std::optional<char> opt = iterator_next(input_iterator, input_left.end());
-		if (opt.has_value()) {
-			char character = opt.value();
+		std::optional<char> current_character = input_iterator.next();
+		if (current_character.has_value()) {
+			size_t current_index = 0;
+			char character = current_character.value();
 
 			enum Initial
 			{
 				Alphabetic,
 				ContinuationToken,
-				Number,
-				SingleSymbol,
-				String
+				Digit,
+				Quote,
+				SingleSymbol
 			};
 
 			Initial initial_token;
 			TokenKind initial_token_kind;
 
 			if (std::isdigit(character)) {
-				initial_token = Initial::Number;
+				initial_token = Initial::Digit;
 			}
 			else if (std::isalpha(character) || character == '_') {
 				initial_token = Initial::Alphabetic;
@@ -105,17 +95,16 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 						break;
 					case '/':
 					{
-						char next_character;
-						if (input_iterator != input_left.end() && (next_character = *input_iterator++) == '/') {
+						std::optional<char> next_character = input_iterator.next();
+						if (next_character.has_value() && next_character.value() == '/') {
 							size_t newline_index = input_left.find("\n");
 							this->index += newline_index == std::string_view::npos ? input_left.length() : newline_index + 1;
 							line_number += 1;
 							continue;
 						}
-						else {
-							initial_token = Initial::SingleSymbol;
-							initial_token_kind = TokenKind::Slash;
-						}
+							
+						initial_token = Initial::SingleSymbol;
+						initial_token_kind = TokenKind::Slash;
 
 						break;
 					}
@@ -138,7 +127,7 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 						break;
 
 					case '"':
-						initial_token = Initial::String;
+						initial_token = Initial::Quote;
 						break;
 
 					default: 
@@ -160,7 +149,11 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 				case Initial::ContinuationToken:
 				{
 					auto continuation_token = this->get_continuation_token(initial_token_kind, input_left.substr(0, 1));
-					if (continuation_token.has_value() && input_iterator != input_left.end() && *input_iterator++ == std::get<0>(continuation_token.value())) {
+					std::optional<char> next_character;
+					if (continuation_token.has_value()
+						&& (next_character = input_iterator.next()).has_value()
+						&& next_character.value() == std::get<0>(continuation_token.value())
+					) {
 						this->process_token_kind(tokens, std::get<1>(continuation_token.value()), input_left.substr(0, 2));
 						this->index += 2;
 					}
@@ -198,13 +191,13 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 					break;
 				}
 
-				case Initial::Number:
+				case Initial::Digit:
 				{
-					size_t end_index = index;
+					size_t end_index = current_index;
 					bool dot_found = false;
 
 					std::optional<char> opt;
-					while ((opt = iterator_next(input_iterator, input_left.end())).has_value()) {
+					while ((opt = input_iterator.next()).has_value()) {
 						char next_character = opt.value();
 
 						if (next_character == '.') {
@@ -233,12 +226,12 @@ std::vector<Result<Token, TokenizerError>> Tokenizer::process()
 					break;
 				}
 
-				case Initial::String:
+				case Initial::Quote:
 				{
 					size_t closing_quote_index = input_left.find("\"", 1);
 					
 					if (closing_quote_index != std::string_view::npos) {
-						std::string_view string_value = input_left.substr(index, closing_quote_index + 1);
+						std::string_view string_value = input_left.substr(current_index, closing_quote_index + 1);
 						this->process_token_kind(tokens, TokenKind::String, string_value);
 						this->index += string_value.length();
 					}
@@ -298,14 +291,14 @@ void Tokenizer::print(const std::vector<Result<Token, TokenizerError>> &tokens) 
 {
 	for (auto &token_result : tokens)
 	{
-		if (!token_result.is_ok) {
-			const TokenizerError &error = token_result.error;
+		if (!token_result.is_ok()) {
+			const TokenizerError &error = token_result.error();
 
-			fprintf(stderr, "[line %lu] Error: %s\n", error.line_number, error.error_message.c_str());
+			fprintf(stderr, "[line %llu] Error: %s\n", error.line_number, error.error_message.c_str());
 			continue;
 		}
 
-		const Token &token = token_result.value;
+		const Token &token = token_result.value();
 		std::tuple<std::string, std::optional<std::string_view>> token_string_tuple;
 
 		switch (token.kind)
@@ -383,7 +376,7 @@ void Tokenizer::print(const std::vector<Result<Token, TokenizerError>> &tokens) 
 			case TokenKind::Number:
 			{
 				std::stringstream token_value_str;
-				double number = parse_number(token.original).value();
+				double number = parse_number(token.original).value();  // NOLINT(bugprone-unchecked-optional-access)
 
 				if (number == std::trunc(number)) {
 					token_value_str << number << ".0";

@@ -84,6 +84,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+	  <ClInclude Include="result.h" />
+	  <ClInclude Include="string_iterator.h" />
 	  <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
