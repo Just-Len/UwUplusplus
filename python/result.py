@@ -1,9 +1,17 @@
-from typing import TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar('T')
-E = EypeVar('E')
+E = TypeVar('E')
 
-class Result:
+class Result(Generic[T, E]):
     def __init__(self, value: T = None, error: E = None):
-        self.value = value
-        self.error = error
+        self.is_ok = False
+
+        if value is not None:
+            if error is not None:
+                raise TypeError("Cannot initialize Result with both value and error")
+
+            self.is_ok = True
+
+        self.value: T = value
+        self.error: E = error
