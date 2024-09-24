@@ -1,5 +1,4 @@
 from enum import Enum
-import typing
 
 from result import *
 
@@ -12,6 +11,10 @@ TokenKind = Enum("TokenKind", """Bang Minus Plus Slash Star Equals Greater Less 
                                  DoubleEquals GreaterEquals LessEquals LeftParenthesis
                                  RightParenthesis Keyword Identifier Number String""")
 
+no_value_keywords = ["and", "or", "if", "else", "print", "var"]
+value_keywords = ["true", "false", "nya"] # nya = "nil" or "null"
+built_in_functions = [""]
+
 class Token:
     def __init__(self, kind: TokenKind, original: str, value: float | str | None = None):
         self.kind       = kind
@@ -19,13 +22,13 @@ class Token:
         self.value      = value
 
 class Tokenizer:
-    def __init__(self, input_string):
+    def __init__(self, input_string: str):
         self.input_string   = input_string
         self.index          = 0
 
     def process(self) -> list[Result[Token, TokenizerError]]:
         tokens: list[Result[Token, TokenizerError]] = []
-        line_number = 0
+        line_number: int = 0
 
         while True:
             input_left      = self.input_string[self.index:]
@@ -132,9 +135,9 @@ class Tokenizer:
                     word = input_left[:identifier_end_index]
                     
                     match word:
-                        case "and" | "else" | "if" | "or" | "print" | "var":
+                        case c if c in no_value_keywords or c in built_in_functions:
                             tokens.append(Result(Token(TokenKind.Keyword, word)))
-                        case "true" | "false" | "nil":
+                        case c if c in value_keywords:
                             tokens.append(Result(Token(TokenKind.Keyword, word, word)))
                         case _: tokens.append(Result(Token(TokenKind.Identifier, word)))
 
