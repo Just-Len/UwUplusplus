@@ -2,12 +2,14 @@ from enum import Enum
 
 from result import *
 
+
 class TokenizerError:
     def __init__(self, line_number: int, error_message: str):
         self.line_number    = line_number
         self.error_message  = error_message
 
-TokenKind = Enum("TokenKind", """Bang Minus Plus Slash Star Equals Greater Less BangEquals
+
+TokenKind = Enum("TokenKind", """Bang Minus Plus Slash Star Equals Eol Greater Less BangEquals
                                  DoubleEquals GreaterEquals LessEquals LeftParenthesis
                                  RightParenthesis Keyword Identifier Number String""")
 
@@ -15,11 +17,13 @@ no_value_keywords = ["and", "or", "if", "else", "print", "var"]
 value_keywords = ["true", "false", "nya"] # nya = "nil" or "null"
 built_in_functions = [""]
 
+
 class Token:
     def __init__(self, kind: TokenKind, original: str, value: float | str | None = None):
         self.kind       = kind
         self.original   = original
         self.value      = value
+
 
 class Tokenizer:
     def __init__(self, input_string: str):
@@ -52,6 +56,7 @@ class Tokenizer:
                     initial_token = InitialToken.Alphabetic
                 case c if c.isspace():
                     if c == "\n":
+                        tokens.append(Result(Token(TokenKind.Eol, "\n")))
                         line_number += 1
 
                     self.index += 1
@@ -183,7 +188,6 @@ class Tokenizer:
         return tokens
 
 
-
 def print_tokens(tokens: list[Result[Token, TokenizerError]]):
     for token_result in tokens:
         if not token_result.is_ok:
@@ -193,7 +197,11 @@ def print_tokens(tokens: list[Result[Token, TokenizerError]]):
 
         print_token(token_result.value)
 
+
 def print_token(token: Token):
+    if token.kind == TokenKind.Eol:
+        return
+
     token_kind_name = token.kind.name.upper()
     token_value = token.value if token.value is not None else "null"
 

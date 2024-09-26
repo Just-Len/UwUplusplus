@@ -6,6 +6,7 @@ ExpressionType = Enum("ExpressionType", "Boolean Identifier If Number Nya Operat
 Operator = Enum("Operator", """And Bang DoubleEquals Equals GreaterEquals Group
                                LessEquals Minus Not Or Plus Slash Star""")
 
+
 class CustomIterator:
     def __init__(self, iterator):
         self.iterator = iterator
@@ -25,6 +26,7 @@ class CustomIterator:
 
         return self.peeked
 
+
 class Expression:
     def __init__(self, type: ExpressionType, operator: Operator | None = None, \
                  value: str | float | None = None, operands = None):
@@ -33,31 +35,50 @@ class Expression:
         self.value = value
         self.operands = operands
 
+    @staticmethod
     def create_value(type: ExpressionType, value: str | float | None):
         return Expression(type, value = value)
 
+    @staticmethod
     def create_nya():
         return Expression(ExpressionType.Nya)
 
+    @staticmethod
     def create_operation(operator: Operator, operands: list):
         return Expression(ExpressionType.Operation, operator, operands = operands)
+
 
 class ParserError:
     def __init__(self, message: str):
         self.message = message
 
+
 class Parser:
     def __init__(self, tokens: list[Token]):
         self.tokens = tokens
 
-    def process(self):
+    def process(self) -> list[Result[Expression, ParserError]]:
         token_iterator = CustomIterator(iter(self.tokens))
-        return self.process_expression(token_iterator, 0)
+        expressions: list[Result[Expression, ParserError]] = []
 
-    def process_expression(self, token_iterator: list[Token], minimum_precedence: int) -> Result[Expression, ParserError]:
-        token = token_iterator.next()
+        while token_iterator.peek() is not None:
+            expressions.append(self.process_expression(token_iterator, 0))
+
+        return expressions
+
+    def process_expression(self, token_iterator: CustomIterator, minimum_precedence: int, parenthesized = False) -> Result[Expression, ParserError] | None:
+        token = None
+        token_kind = TokenKind.Eol
+
+        while (token := token_iterator.next()) is not None and token.kind == TokenKind.Eol:
+            if (token.kind == TokenKind.Eol and not parenthesized and minimum_precedence > 0):
+                return parser_error_result("Unexpected end of line in expression.")
+            else:
+                token_kind = token.kind
 
         if token is None:
+            if token_kind == TokenKind.Eol:
+                return Result(Expression.create_nya())
             return parser_error_result("Expected a token.")
         
         match token.kind:
@@ -71,9 +92,9 @@ class Parser:
             case TokenKind.String:
                 left_expression = Result(Expression.create_value(ExpressionType.String, token.value))
             case TokenKind.LeftParenthesis:
-                inner_expression_result = self.process_expression(token_iterator, 0)
+                inner_expression_result = self.process_expression(token_iterator, 0, True)
 
-                if not inner_expression_result.is_ok():
+                if not inner_expression_result.is_ok:
                     return inner_expression_result
 
                 next_token = token_iterator.next()
@@ -86,7 +107,7 @@ class Parser:
                 operator = Operator[token.kind.name]
                 operator_precedence = 10
 
-                inner_expression_result = parse_expression(token_iterator, operator_precedence)
+                inner_expression_result = parse_expression(token_iterator, operator_precedence, parenthesized)
                 if not inner_expression_result.is_ok:
                     return inner_expression_result
 
@@ -101,6 +122,14 @@ class Parser:
                 break
 
             match token.kind:
+                case TokenKind.Eol:
+                    if parenthesized:
+                        token_iterator.next()
+                        continue
+                    else:
+                        break
+                case TokenKind.RightParenthesis:
+                    break
                 case TokenKind.Keyword if token.original == "and":
                     operator = Operator.And
                 case TokenKind.Keyword if token.original == "or":
@@ -119,7 +148,7 @@ class Parser:
                 break
 
             token_iterator.next()
-            right_expression_result = self.process_expression(token_iterator, operator_precedence[1])
+            right_expression_result = self.process_expression(token_iterator, operator_precedence[1], parenthesized)
             if not right_expression_result.is_ok:
                 return right_expression_result
 
@@ -127,6 +156,7 @@ class Parser:
             continue
 
         return left_expression
+
 
 def operator_string(operator: Operator) -> str | None:
     match operator:
@@ -157,6 +187,7 @@ def operator_string(operator: Operator) -> str | None:
         case Operator.Star:
             return "*"
 
+
 def expression_string(expression: Expression) -> str:
     match expression.type:
         case ExpressionType.Nya:
@@ -164,10 +195,17 @@ def expression_string(expression: Expression) -> str:
         case ExpressionType.Boolean | ExpressionType.Number | ExpressionType.String:
             return expression.value
         case ExpressionType.Operation:
-            return f'({operator_string(expression.operator)} {expression_string(expression.operands[0])} {expression_string(expression.operands[1])})'
+            expression_str = f'({operator_string(expression.operator)}'
+            for operand in expression.operands:
+                expression_str += f' {expression_string(operand)}'
+
+            expression_str += ")"
+            return expression_str
+
 
 def print_expression(expression: Expression):
     print(expression_string(expression))
+
 
 def infix_operator_precedence(operator: Operator) -> tuple[int, int] | None:
     match operator:
@@ -181,6 +219,7 @@ def infix_operator_precedence(operator: Operator) -> tuple[int, int] | None:
             return (7, 8)
         case _:
             return None
+
 
 def parser_error_result(message: str) -> Result[Expression, ParserError]:
     return Result(error = ParserError(message))

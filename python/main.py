@@ -35,8 +35,13 @@ def main():
             tokens = map(lambda t: t.value, tokens)
 
             parser = Parser(tokens)
-            result = parser.process()
-            print_expression(result.value)
+            expression_results = parser.process()
+
+            for result in expression_results:
+                if result.is_ok:
+                    print_expression(result.value)
+                else:
+                    print(result.error.message)
             return 0
         case _:
             print("Unrecognized command.")
