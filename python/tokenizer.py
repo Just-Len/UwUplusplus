@@ -10,12 +10,22 @@ class TokenizerError:
 
 
 TokenKind = Enum("TokenKind", """Bang Minus Plus Slash Star Equals Eol Greater Less BangEquals
-                                 DoubleEquals GreaterEquals LessEquals LeftParenthesis
-                                 RightParenthesis Keyword Identifier Number String""")
+                                 DoubleEquals GreaterEquals LessEquals LeftBrace LeftParenthesis
+                                 RightBrace RightParenthesis Keyword Identifier Number String""")
 
-no_value_keywords = ["and", "or", "if", "else", "print", "var"]
-value_keywords = ["true", "false", "nya"] # nya = "nil" or "null"
-built_in_functions = [""]
+AND_KEYWORD = "y"
+OR_KEYWORD = "o"
+IF_KEYWORD = "si"
+ELSE_KEYWORD = "sino"
+NOT_KEYWORD = "no"
+PRINT_KEYWORD = "impwimir"
+TRUE_KEYWORD = "chi"
+FALSE_KEYWORD = "ño"
+NIL_KEYWORD = "nya"
+no_value_keywords = [AND_KEYWORD, OR_KEYWORD, IF_KEYWORD, ELSE_KEYWORD, NOT_KEYWORD, PRINT_KEYWORD]
+value_keywords = [TRUE_KEYWORD, FALSE_KEYWORD, NIL_KEYWORD]
+built_in_functions = ["UnUReversa", "TwTPotencia", "owoValorTotal", "UwUMaximo", "UnUMinimo",
+                      "UwUCima", "UnUSuelo", "EwEMedia", "TwTSuma", "OwOLazo", "UnUMezcla"]
 
 
 class Token:
@@ -67,6 +77,12 @@ class Tokenizer:
                 case ')':
                     initial_token = InitialToken.SingleSymbol
                     initial_token_kind = TokenKind.RightParenthesis
+                case '{':
+                    initial_token = InitialToken.SingleSymbol
+                    initial_token_kind = TokenKind.LeftBrace
+                case '}':
+                    initial_token = InitialToken.SingleSymbol
+                    initial_token_kind = TokenKind.RightBrace
                 case '-':
                     initial_token = InitialToken.SingleSymbol
                     initial_token_kind = TokenKind.Minus
@@ -144,7 +160,8 @@ class Tokenizer:
                             tokens.append(Result(Token(TokenKind.Keyword, word)))
                         case c if c in value_keywords:
                             tokens.append(Result(Token(TokenKind.Keyword, word, word)))
-                        case _: tokens.append(Result(Token(TokenKind.Identifier, word)))
+                        case _:
+                            tokens.append(Result(Token(TokenKind.Identifier, word)))
 
                     self.index += len(word)
 
