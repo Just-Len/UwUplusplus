@@ -1,0 +1,27 @@
+foo = 20
+bar = 10
+
+foo + bar
+
+//20 +
+//10
+//16 * 32 / 4 + 20 * 9 + 10 + 30 / 2
+//(15
+//+
+//2)
+//foo = 5
+//bar = 6
+//(baz
+//=
+//10)
+//"hello, world" == "hello, world"
+//
+//si chi == chi {
+//}
+//sino {
+//}
+//
+//si chi { }
+//
+//UnUReversa "hola mundo: " 1 ". hello, world"
+//EwEMedia (TwTPotencia 10 2) 10 4
