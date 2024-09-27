@@ -112,7 +112,12 @@ class Parser:
 
                     arguments.append(argument_expression_result.value)
 
-                left_expression = Result(Expression.create_operation(Operator[token.original], arguments))
+                if token.original == PRINT_KEYWORD:
+                    operator = Operator.Print
+                else:
+                    operator = Operator[token.original]
+
+                left_expression = Result(Expression.create_operation(operator, arguments))
 
             case TokenKind.Keyword if token.original == IF_KEYWORD:
                 condition_expression_result = self.process_expression(token_iterator, 0, False)

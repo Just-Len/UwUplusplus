@@ -1,7 +1,8 @@
 foo = 20
 bar = 10
 
-foo + bar
+impwimir foo + bar
+foo + "hello, world"
 
 //20 +
 //10

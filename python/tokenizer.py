@@ -22,10 +22,10 @@ PRINT_KEYWORD = "impwimir"
 TRUE_KEYWORD = "chi"
 FALSE_KEYWORD = "ño"
 NIL_KEYWORD = "nya"
-no_value_keywords = [AND_KEYWORD, OR_KEYWORD, IF_KEYWORD, ELSE_KEYWORD, NOT_KEYWORD, PRINT_KEYWORD]
+no_value_keywords = [AND_KEYWORD, OR_KEYWORD, IF_KEYWORD, ELSE_KEYWORD, NOT_KEYWORD]
 value_keywords = [TRUE_KEYWORD, FALSE_KEYWORD, NIL_KEYWORD]
 built_in_functions = ["UnUReversa", "TwTPotencia", "owoValorTotal", "UwUMaximo", "UnUMinimo",
-                      "UwUCima", "UnUSuelo", "EwEMedia", "TwTSuma", "OwOLazo", "UnUMezcla"]
+                      "UwUCima", "UnUSuelo", "EwEMedia", "TwTSuma", "OwOLazo", "UnUMezcla", PRINT_KEYWORD]
 
 
 class Token:
