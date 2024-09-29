@@ -123,30 +123,56 @@ class Evaluator:
     def process_reverse_operation(self, expression: Expression):
         match expression.operands[0].type:
             case ExpressionType.Identifier:
-                variable_data = self.variables.get(expression.value, None)
+                variable_data = self.variables.get(expression.operands[0].value, None)
                 match variable_data.type:
                     case ExpressionType.String:
-                        return Result(self.reverse_string(expression))
+                        return Result(self.reverse_string(variable_data))
                     case ExpressionType.Number:
-                        return Result(self.reverse_number(expression))
+                        return Result(self.reverse_number(variable_data))
             case ExpressionType.String:
-                return Result(self.reverse_string(expression))
+                return Result(self.reverse_string(expression.operands[0]))
             case ExpressionType.Number:
-                return Result(self.reverse_number(expression))
+                return Result(self.reverse_number(expression.operands[0]))
             case ExpressionType.Boolean:
                 return evaluator_error_result('Operand cannot be boolean.')
 
     def reverse_string(self, expression: Expression):
-        return expression.operands[0].value[::-1]
+        return expression.value[::-1]
 
     def reverse_number(self, expression: Expression):
-        number_value = expression.operands[0].value
+        number_value = expression.value
         reverse_number = 0
         while number_value > 0:
             digit = number_value % 10
             reverse_number = reverse_number * 10 + digit
             number_value //= 10
         return reverse_number
+
+    def process_power_operation(self, expression: Expression):
+        if expression.operands[1] is None:
+            return evaluator_error_result('Second parameter needed to calculate power.')
+
+        if expression.operands[2] is not None:
+            return evaluator_error_result('This method only accept two parameters')
+
+        match expression.operands[0].type:
+            case ExpressionType.Identifier:
+                variable_data = self.variables.get(expression.value, None)
+                match variable_data.type:
+                    case ExpressionType.String:
+                        evaluator_error_result('This method doesn`t accept string values')
+                    case ExpressionType.Number:
+                        return Result(self.power_number(expression))
+
+            case ExpressionType.Number:
+                return Result(self.power_number(expression))
+            case ExpressionType.String:
+                evaluator_error_result('This method doesn`t accept string values')
+            case ExpressionType.Boolean:
+                evaluator_error_result('This method doesn`t accept boolean values')
+
+    def power_number(self, expression: Expression):
+        return expression.operands[0].value ** expression.operands[1].value
 
     def process_print(self, expression: Expression):
         for argument in expression.operands:
