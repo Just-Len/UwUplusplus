@@ -81,7 +81,7 @@ class Evaluator:
                         result = self.process_reverse_operation(expression)
 
                     case Operator.TwTPotencia:
-
+                        pass
         return result
 
     def process_assignment(self, expression: Expression):
@@ -121,24 +121,18 @@ class Evaluator:
         return Result(operator(left_value, right_value))
 
     def process_reverse_operation(self, expression: Expression):
-        reverse_operator = self.process_expression(expression)
-
-        if not reverse_operator.is_ok:
-            return reverse_operator
-        match expression.type:
+        match expression.operands[0].type:
             case ExpressionType.Identifier:
                 variable_data = self.variables.get(expression.value, None)
                 match variable_data.type:
                     case ExpressionType.String:
-                        return self.reverse_string(reverse_operator)
+                        return Result(self.reverse_string(expression))
                     case ExpressionType.Number:
-                        return self.reverse_number(reverse_operator)
+                        return Result(self.reverse_number(expression))
             case ExpressionType.String:
-                return self.reverse_string(reverse_operator)
+                return Result(self.reverse_string(expression))
             case ExpressionType.Number:
-                return self.reverse_number(reverse_operator)
-            case ExpressionType.Group:
-                return evaluator_error_result('Operand cannot be a group of expressions.')
+                return Result(self.reverse_number(expression))
             case ExpressionType.Boolean:
                 return evaluator_error_result('Operand cannot be boolean.')
 
