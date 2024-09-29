@@ -68,6 +68,20 @@ class Evaluator:
                     case Operator.Star:
                         result = self.process_binary_operation(expression, python_operator.mul)
 
+                    case Operator.And:
+                        result = self.process_binary_operation(expression, python_operator.and_)
+
+                    case Operator.Or:
+                        result = self.process_binary_operation(expression, python_operator.or_)
+
+                    case Operator.Not:
+                        result = self.process_binary_operation(expression, python_operator.not_)
+
+                    case Operator.UnUReversa:
+                        result = self.process_reverse_operation(expression)
+
+                    case Operator.TwTPotencia:
+
         return result
 
     def process_assignment(self, expression: Expression):
@@ -105,6 +119,40 @@ class Evaluator:
         right_value = self.actual_value(right_expression_value_result.value)
 
         return Result(operator(left_value, right_value))
+
+    def process_reverse_operation(self, expression: Expression):
+        reverse_operator = self.process_expression(expression)
+
+        if not reverse_operator.is_ok:
+            return reverse_operator
+        match expression.type:
+            case ExpressionType.Identifier:
+                variable_data = self.variables.get(expression.value, None)
+                match variable_data.type:
+                    case ExpressionType.String:
+                        return self.reverse_string(reverse_operator)
+                    case ExpressionType.Number:
+                        return self.reverse_number(reverse_operator)
+            case ExpressionType.String:
+                return self.reverse_string(reverse_operator)
+            case ExpressionType.Number:
+                return self.reverse_number(reverse_operator)
+            case ExpressionType.Group:
+                return evaluator_error_result('Operand cannot be a group of expressions.')
+            case ExpressionType.Boolean:
+                return evaluator_error_result('Operand cannot be boolean.')
+
+    def reverse_string(self, expression: Expression):
+        return expression.operands[0].value[::-1]
+
+    def reverse_number(self, expression: Expression):
+        number_value = expression.operands[0].value
+        reverse_number = 0
+        while number_value > 0:
+            digit = number_value % 10
+            reverse_number = reverse_number * 10 + digit
+            number_value //= 10
+        return reverse_number
 
     def process_print(self, expression: Expression):
         for argument in expression.operands:
