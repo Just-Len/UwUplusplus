@@ -139,31 +139,34 @@ class Evaluator:
         return Result(operator(left_value_data.value, right_value_data.value))
 
     def process_reverse_operation(self, expression: Expression):
-        match expression.operands[0].type:
-            case ExpressionType.Identifier:
-                variable_data = self.variables.get(expression.value, None)
-                match variable_data.type:
-                    case ExpressionType.String:
-                        return Result(self.reverse_string(expression))
-                    case ExpressionType.Number:
-                        return Result(self.reverse_number(expression))
-            case ExpressionType.String:
-                return Result(self.reverse_string(expression))
-            case ExpressionType.Number:
-                return Result(self.reverse_number(expression))
-            case ExpressionType.Boolean:
-                return evaluator_error_result('Operand cannot be boolean.')
+        operand_count = len(expression.operands)
+        if operand_count != 1:
+            return evaluator_error_result(f'Invalid number of arguments for {expression.type.name}. Expected 1, got {operand_count}.')
 
-    def reverse_string(self, expression: Expression):
-        return expression.operands[0].value[::-1]
+        operand_value_result = self.process_expression(expression.operands[0])
+        if not operand_value_result.is_ok:
+            return operand_value_result
 
-    def reverse_number(self, expression: Expression):
-        number_value = expression.operands[0].value
+        operand_value_data = operand_value_result.value
+        match operand_value_data.type:
+            case ValueType.Number:
+                return Result(self.reverse_number(operand_value_data.value))
+            case ValueType.String:
+                return Result(self.reverse_string(operand_value_data.value))
+            case ValueType.Nya:
+                return evaluator_error_result(f'nya~~ value passed to {expression.type.name} function.')
+            case _:
+                return evaluator_error_result(f'Invalid argument type for {expression.type.name} function. Expected Number or String, got {operand_value_data.type.name}')
+
+    def reverse_string(self, value: str):
+        return value[::-1]
+
+    def reverse_number(self, value: float):
         reverse_number = 0
-        while number_value > 0:
-            digit = number_value % 10
+        while value > 0:
+            digit = value % 10
             reverse_number = reverse_number * 10 + digit
-            number_value //= 10
+            value //= 10
         return reverse_number
 
     def process_print(self, expression: Expression):
