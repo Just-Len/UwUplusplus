@@ -5,11 +5,29 @@ from result import *
 
 Nya = object()
 
+ValueType = Enum("ValueType", "Boolean Number Nya String")
 
-class VariableData:
-    def __init__(self, value, type: ExpressionType):
+
+class ValueData:
+    def __init__(self, value, type: ValueType):
         self.value = value
-        self.type: ExpressionType = type
+        self.type = type
+
+    @staticmethod
+    def boolean_value(value):
+        return ValueData(value, ValueType.Boolean)
+
+    @staticmethod
+    def number_value(value):
+        return ValueData(value, ValueType.Number)
+
+    @staticmethod
+    def nya_value():
+        return ValueData(Nya, ValueType.Nya)
+
+    @staticmethod
+    def string_value(value):
+        return ValueData(value, ValueType.String)
 
 
 class EvaluatorError:
@@ -19,7 +37,7 @@ class EvaluatorError:
 class Evaluator:
     def __init__(self, expressions: list[Expression]):
         self.expressions = expressions
-        self.variables: dict[str, VariableData] = {}
+        self.variables: dict[str, ValueData] = {}
 
     def process(self):
         for expression in self.expressions:
@@ -28,21 +46,21 @@ class Evaluator:
                 print(f'FATAL ERROR: {result.error.message}')
                 return
 
-    def process_expression(self, expression: Expression) -> Result[any, EvaluatorError]:
-        result: Result[any, EvaluatorError] = None
+    def process_expression(self, expression: Expression) -> Result[ValueData, EvaluatorError]:
+        result: Result[ValueData, EvaluatorError] = None
         match expression.type:
             case ExpressionType.Nya:
-                return Result(Nya)
+                result = Result(ValueData.nya_value())
 
             case ExpressionType.Boolean | ExpressionType.Number | ExpressionType.String:
-                return Result(expression.value)
+                result = Result(ValueData(expression.value, ValueType[expression.type.name]))
 
             case ExpressionType.Identifier:
-                variable_data = self.variables.get(expression.value, None)
-                if variable_data is None:
+                value = self.variables.get(expression.value, None)
+                if value is None:
                     return evaluator_error_result(f'Variable {expression.value} is not defined.')
 
-                return Result(variable_data)
+                result = Result(value)
 
             case ExpressionType.Operation:
                 match expression.operator:
@@ -51,7 +69,7 @@ class Evaluator:
 
                     case Operator.Print:
                         self.process_print(expression)
-                        result = Result(Nya)
+                        result = Result(ValueData.nya_value())
 
                     case Operator.Equals:
                         result = self.process_assignment(expression)
@@ -82,9 +100,10 @@ class Evaluator:
 
                     case Operator.TwTPotencia:
                         pass
+
         return result
 
-    def process_assignment(self, expression: Expression):
+    def process_assignment(self, expression: Expression) -> Result[ValueData, EvaluatorError]:
         identifier_expression = expression.operands[0]
         if identifier_expression.type != ExpressionType.Identifier:
             return evaluator_error_result("Expected identifier for the left hand side of assignment expression.")
@@ -95,12 +114,12 @@ class Evaluator:
             return actual_value_result
 
         variable_name = expression.operands[0].value
-        actual_value = actual_value_result.value
-        # TODO: Still not the right way to get its type
-        self.variables[variable_name] = VariableData(actual_value, value_expression.type)
-        return Result(self.variables[variable_name])
+        value_data = actual_value_result.value
 
-    def process_binary_operation(self, expression: Expression, operator):
+        self.variables[variable_name] = value_data
+        return actual_value_result
+
+    def process_binary_operation(self, expression: Expression, operator) -> Result[ValueData, EvaluatorError]:
         left_expression = expression.operands[0]
         right_expression = expression.operands[1]
 
@@ -112,13 +131,12 @@ class Evaluator:
         if not right_expression_value_result.is_ok:
             return right_expression_value_result
 
-        if self.expression_actual_type(left_expression) != self.expression_actual_type(right_expression):
-            return evaluator_error_result(f'Operand types do not match for binary operation. Got {left_expression.type.name} and {right_expression.type.name}.')
+        left_value_data = left_expression_value_result.value
+        right_value_data = right_expression_value_result.value
+        if left_value_data.type != right_value_data.type:
+            return evaluator_error_result(f'Operand types do not match for binary operation. Got {left_value_data.type.name} and {right_value_data.type.name}.')
 
-        left_value = self.actual_value(left_expression_value_result.value)
-        right_value = self.actual_value(right_expression_value_result.value)
-
-        return Result(operator(left_value, right_value))
+        return Result(operator(left_value_data.value, right_value_data.value))
 
     def process_reverse_operation(self, expression: Expression):
         match expression.operands[0].type:
@@ -155,20 +173,6 @@ class Evaluator:
                 return argument_value_result
 
             print(argument_value_result.value, sep = None)
-
-    def actual_value(self, expression_value):
-        actual_value = expression_value
-        if type(actual_value) == VariableData:
-            actual_value = actual_value.value
-
-        return actual_value
-
-    def expression_actual_type(self, expression: Expression) -> ExpressionType:
-        expression_type = expression.type
-        if expression_type == ExpressionType.Identifier:
-            expression_type = self.variables[expression.value].type
-
-        return expression_type
 
 
 def evaluator_error_result(message: str) -> Result[any, EvaluatorError]:
