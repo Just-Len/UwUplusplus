@@ -96,7 +96,9 @@ class Evaluator:
                         result = self.process_binary_operation(expression, python_operator.not_)
 
                     case Operator.UnUReversa:
-                        result = self.process_reverse_operation(expression)
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number, ValueType.String],
+                                                              1, UnUReversa)
 
                     case Operator.TwTPotencia:
                         pass
@@ -136,38 +138,37 @@ class Evaluator:
         if left_value_data.type != right_value_data.type:
             return evaluator_error_result(f'Operand types do not match for binary operation. Got {left_value_data.type.name} and {right_value_data.type.name}.')
 
-        return Result(operator(left_value_data.value, right_value_data.value))
+        return Result(ValueData.number_value(operator(left_value_data.value, right_value_data.value)))
 
-    def process_reverse_operation(self, expression: Expression):
+    def process_n_ary_operation(self, expression: Expression, expected_operand_types: list[ValueType],
+                                expected_operand_count: int | None, built_in_function) -> Result[ValueData, EvaluatorError]:
         operand_count = len(expression.operands)
-        if operand_count != 1:
-            return evaluator_error_result(f'Invalid number of arguments for {expression.type.name}. Expected 1, got {operand_count}.')
+        if expected_operand_count is not None and operand_count != expected_operand_count:
+            return evaluator_error_result(f'Invalid number of arguments for {expression.type.name}. Expected {expected_operand_count}, got {operand_count}.')
 
-        operand_value_result = self.process_expression(expression.operands[0])
-        if not operand_value_result.is_ok:
-            return operand_value_result
+        index = 0
+        operand_values_data: list[ValueData] = []
+        for operand in expression.operands:
+            operand_value_result = self.process_expression(operand)
+            if not operand_value_result.is_ok:
+                return operand_value_result
 
-        operand_value_data = operand_value_result.value
-        match operand_value_data.type:
-            case ValueType.Number:
-                return Result(self.reverse_number(operand_value_data.value))
-            case ValueType.String:
-                return Result(self.reverse_string(operand_value_data.value))
-            case ValueType.Nya:
-                return evaluator_error_result(f'nya~~ value passed to {expression.type.name} function.')
-            case _:
-                return evaluator_error_result(f'Invalid argument type for {expression.type.name} function. Expected Number or String, got {operand_value_data.type.name}')
+            operand_value_data = operand_value_result.value
+            if operand_value_data.type == ValueType.Nya:
+                return evaluator_error_result(f'nya~~ value passed through {index}th parameter to {expression.type.name} function.')
+            if operand_value_data.type not in expected_operand_types:
+                type_names_joined = " or ".join(expected_operand_types)
+                return evaluator_error_result(f'Invalid argument type for {expression.type.name} function. Expected {type_names_joined}, got {operand_value_data.type}.')
 
-    def reverse_string(self, value: str):
-        return value[::-1]
+            operand_values_data.append(operand_value_result.value)
 
-    def reverse_number(self, value: float):
-        reverse_number = 0
-        while value > 0:
-            digit = value % 10
-            reverse_number = reverse_number * 10 + digit
-            value //= 10
-        return reverse_number
+        built_in_function_arguments = None
+        if expected_operand_count == 1:
+            built_in_function_arguments = operand_values_data[0]
+        else:
+            built_in_function_arguments = operand_values_data
+
+        return Result(ValueData(built_in_function(built_in_function_arguments), expected_operand_types))
 
     def process_print(self, expression: Expression):
         for argument in expression.operands:
@@ -175,8 +176,32 @@ class Evaluator:
             if not argument_value_result.is_ok:
                 return argument_value_result
 
-            print(argument_value_result.value, sep = None)
+            value_data = argument_value_result.value
+            print(value_data.value, sep = None)
 
 
 def evaluator_error_result(message: str) -> Result[any, EvaluatorError]:
     return Result(error = EvaluatorError(message))
+
+
+def UnUReversa(value_data: ValueData) -> any:
+    actual_value = value_data.value
+    if value_data.type == ValueType.Number:
+        return UnUReversa_number(actual_value)
+    elif value_data.type == ValueType.String:
+        return UnUReversa_string(actual_value)
+
+    raise RuntimeError("Invalid value type for UnUReversa function.")
+
+
+def UnUReversa_string(value: str):
+    return value[::-1]
+
+
+def UnUReversa_number(value: float):
+    reverse_number = 0
+    while value > 0:
+        digit = value % 10
+        reverse_number = reverse_number * 10 + digit
+        value //= 10
+    return reverse_number
