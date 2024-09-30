@@ -1,3 +1,4 @@
+import math
 import operator as python_operator
 
 from parser import *
@@ -101,7 +102,45 @@ class Evaluator:
                                                               1, UnUReversa)
 
                     case Operator.TwTPotencia:
-                        pass
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              2, TwTPotencia)
+
+                    case Operator.owoValorTotal:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              1, owoValorTotal)
+
+                    case Operator.UwUMaximo:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              2, UwUMaximo, True)
+
+                    case Operator.UnUMinimo:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              2, UwUMinimo, True)
+
+                    case Operator.UwUCima:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              1, UwUCima)
+
+                    case Operator.UnUSuelo:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              1, UnUSuelo)
+
+                    case Operator.EwEMedia:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              2, EwEMedia, True)
+
+                    case Operator.TwTSuma:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Number],
+                                                              2, TwTSuma, True)
+
 
         return result
 
@@ -141,9 +180,9 @@ class Evaluator:
         return Result(ValueData.number_value(operator(left_value_data.value, right_value_data.value)))
 
     def process_n_ary_operation(self, expression: Expression, expected_operand_types: list[ValueType],
-                                expected_operand_count: int | None, built_in_function) -> Result[ValueData, EvaluatorError]:
+                                expected_operand_count: int | None, built_in_function, multi_value = False) -> Result[ValueData, EvaluatorError]:
         operand_count = len(expression.operands)
-        if expected_operand_count is not None and operand_count != expected_operand_count:
+        if (expected_operand_count is not None and operand_count != expected_operand_count) and not multi_value:
             return evaluator_error_result(f'Invalid number of arguments for {expression.type.name}. Expected {expected_operand_count}, got {operand_count}.')
 
         index = 0
@@ -162,13 +201,15 @@ class Evaluator:
 
             operand_values_data.append(operand_value_result.value)
 
-        built_in_function_arguments = None
+        built_in_function_arguments = []
         if expected_operand_count == 1:
             built_in_function_arguments = operand_values_data[0]
+            return Result(ValueData(built_in_function(built_in_function_arguments), expected_operand_types))
         else:
             built_in_function_arguments = operand_values_data
+            return Result(ValueData(built_in_function(*built_in_function_arguments), expected_operand_types))
 
-        return Result(ValueData(built_in_function(built_in_function_arguments), expected_operand_types))
+
 
     def process_print(self, expression: Expression):
         for argument in expression.operands:
@@ -205,3 +246,47 @@ def UnUReversa_number(value: float):
         reverse_number = reverse_number * 10 + digit
         value //= 10
     return reverse_number
+
+def TwTPotencia(value_number: ValueData, value_power: ValueData) -> any:
+    actual_value_number = value_number.value
+    actual_value_power = value_power.value
+    return actual_value_number ** actual_value_power
+
+def owoValorTotal(value_data: ValueData) -> any:
+    return abs(value_data.value)
+
+def UwUMaximo(*numbers: ValueData) -> any:
+    max_value = 0
+    for number in numbers:
+        if number.value > max_value:
+            max_value = number.value
+
+    return max_value
+
+def UwUMinimo(*numbers: ValueData) -> any:
+    min_value = 0
+    for number in numbers:
+        if number.value < min_value:
+            min_value = number.value
+
+    return min_value
+
+def UwUCima(value_data: ValueData) -> any:
+    return math.ceil(value_data.value)
+
+def UnUSuelo(value_data: ValueData) -> any:
+    return math.floor(value_data.value)
+
+def EwEMedia(*numbers: ValueData) -> any:
+    total = 0
+    for number in numbers:
+        total += number.value
+
+    return total / len(numbers)
+
+def TwTSuma(*numbers: ValueData) -> any:
+    total = 0
+    for number in numbers:
+        total += number.value
+
+    return total
