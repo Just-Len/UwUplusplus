@@ -1,5 +1,6 @@
 import math
 import operator as python_operator
+from audioop import reverse
 
 from parser import *
 from result import *
@@ -140,6 +141,16 @@ class Evaluator:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.Number],
                                                               2, TwTSuma, True)
+
+                    case Operator.OwOLazo:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.String],
+                                                              1,OwOLazo)
+
+                    case Operator.UnUMezcla:
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.String],
+                                                              2,UnUMezcla)
 
 
         return result
@@ -290,3 +301,13 @@ def TwTSuma(*numbers: ValueData) -> any:
         total += number.value
 
     return total
+
+def OwOLazo(value_data: ValueData) -> any:
+    if value_data.value.lower() == value_data.value[::-1].lower():
+        return "Chi"
+    return "Ño"
+
+def UnUMezcla(first_value_data: ValueData, second_value_data: ValueData) -> any:
+    if sorted(first_value_data.value.lower()) == sorted(second_value_data.value.lower()):
+        return "Chi"
+    return "Ño"
