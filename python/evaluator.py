@@ -77,7 +77,19 @@ class Evaluator:
                         result = self.process_assignment(expression)
 
                     case Operator.Minus:
-                        result = self.process_binary_operation(expression, python_operator.sub)
+                        if len(expression.operands) == 1:
+                            operand_result = self.process_expression(expression.operands[0])
+                            if not operand_result.is_ok:
+                                return operand_result
+
+                            operand_value_data = operand_result.value
+                            if operand_value_data.type != ValueType.Number:
+                                return evaluator_error_result("Can only negate numbers.")
+
+                            result = Result(ValueData.number_value(- operand_value_data.value))
+
+                        else:
+                            result = self.process_binary_operation(expression, python_operator.sub)
 
                     case Operator.Plus:
                         result = self.process_binary_operation(expression, python_operator.add)
@@ -172,6 +184,11 @@ class Evaluator:
         return actual_value_result
 
     def process_binary_operation(self, expression: Expression, operator) -> Result[ValueData, EvaluatorError]:
+        operand_count = len(expression.operands)
+        if operand_count != 2:
+            # Is this even possible?
+            return evaluator_error_result(f'Invalid number of operands for binary operation {expression.type}. Expected 2, got {operand_count}.')
+
         left_expression = expression.operands[0]
         right_expression = expression.operands[1]
 
@@ -215,10 +232,10 @@ class Evaluator:
         built_in_function_arguments = []
         if expected_operand_count == 1:
             built_in_function_arguments = operand_values_data[0]
-            return Result(ValueData(built_in_function(built_in_function_arguments), expected_operand_types))
+            return Result(ValueData(built_in_function(built_in_function_arguments), built_in_function_arguments.type))
         else:
             built_in_function_arguments = operand_values_data
-            return Result(ValueData(built_in_function(*built_in_function_arguments), expected_operand_types))
+            return Result(ValueData(built_in_function(*built_in_function_arguments), built_in_function_arguments[0].type))
 
 
 

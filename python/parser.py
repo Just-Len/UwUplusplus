@@ -193,22 +193,22 @@ class Parser:
 
             case TokenKeyword if token.original == NOT_KEYWORD:
                 operator_precedence = 10
-                inner_expression_result = parse_expression(token_iterator, operator_precedence, parenthesized)
+                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized)
                 if not inner_expression_result.is_ok:
                     return inner_expression_result
 
                 inner_expression = inner_expression_result.value
-                left_expression = Result(Expression.create_operation(Operator.Not, inner_expression))
+                left_expression = Result(Expression.create_operation(Operator.Not, [inner_expression]))
             case TokenKind.Bang | TokenKind.Minus | TokenKind.Keyword:
                 operator = Operator[token.kind.name]
                 operator_precedence = 10
 
-                inner_expression_result = parse_expression(token_iterator, operator_precedence, parenthesized)
+                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized)
                 if not inner_expression_result.is_ok:
                     return inner_expression_result
 
                 inner_expression = inner_expression_result.value
-                left_expression = Result(Expression.create_operation(operator, inner_expression))
+                left_expression = Result(Expression.create_operation(operator, [inner_expression]))
 
             case _:
                 return parser_error_result("Unexpected token.")
