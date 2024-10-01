@@ -37,15 +37,16 @@ class EvaluatorError:
         self.message = message
 
 class Evaluator:
-    def __init__(self, expressions: list[Expression]):
+    def __init__(self, expressions: list[Expression], output_destination):
         self.expressions = expressions
         self.variables: dict[str, ValueData] = {}
+        self.output_destination = output_destination
 
     def process(self):
         for expression in self.expressions:
             result = self.process_expression(expression)
             if not result.is_ok:
-                print(f'FATAL ERROR: {result.error.message}')
+                print(f'FATAL ERROR: {result.error.message}', file = self.output_destination)
                 return
 
     def process_expression(self, expression: Expression) -> Result[ValueData, EvaluatorError]:
@@ -287,9 +288,9 @@ class Evaluator:
             if value_data.type == ValueType.Boolean:
                 value = "chi" if value else "ño"
 
-            print(value, end = "")
+            print(value, end = "", file = self.output_destination)
 
-        print()
+        print(file = self.output_destination)
         return Result(ValueData.nya_value())
 
 

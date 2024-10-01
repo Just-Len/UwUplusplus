@@ -1,7 +1,9 @@
 import sys
+from io import StringIO
 
 from evaluator import Evaluator
 from parser import *
+from runner import Runner
 from tokenizer import *
 
 def read_file(filepath: str) -> str:
@@ -51,16 +53,13 @@ def main():
                     print(result.error.message)
             return 0
         case "evaluate":
-            tokenizer = Tokenizer(file_contents)
-            tokens = tokenizer.process()
-            tokens = map(lambda t: t.value, tokens)
+            output_destination = StringIO()
 
-            parser = Parser(tokens)
-            expression_results = parser.process()
-            expressions = map(lambda e: e.value, expression_results)
+            runner = Runner(file_contents, output_destination)
+            runner.run_code()
 
-            evaluator = Evaluator(expressions)
-            evaluator.process()
+            print(output_destination.getvalue())
+            output_destination.close()
         case _:
             print("Unrecognized command.")
             return 1
