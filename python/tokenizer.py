@@ -10,8 +10,8 @@ class TokenizerError:
 
 
 TokenKind = Enum("TokenKind", """Bang Minus Plus Slash Star Equals Eol Greater Less BangEquals
-                                 DoubleEquals GreaterEquals LessEquals LeftBrace LeftParenthesis
-                                 RightBrace RightParenthesis Keyword Identifier Number String""")
+                                             DoubleEquals GreaterEquals LessEquals LeftBrace LeftParenthesis
+                                             RightBrace RightParenthesis Keyword Identifier Number String""")
 
 AND_KEYWORD = "y"
 OR_KEYWORD = "o"

@@ -1,28 +1,30 @@
 foo = 20
 bar = 10
+num = 12345
+boolean = foo == bar
 
-impwimir foo + bar
-foo + "hello, world"
+impwimir "foo = " foo ", bar = " bar
+impwimir "Suma = " foo + bar
+impwimir "Resta = " foo - bar
+impwimir "Producto = " foo * bar
+impwimir "División = " foo / bar
 
-//20 +
-//10
-//16 * 32 / 4 + 20 * 9 + 10 + 30 / 2
-//(15
-//+
-//2)
-//foo = 5
-//bar = 6
-//(baz
-//=
-//10)
-//"hello, world" == "hello, world"
-//
-//si chi == chi {
-//}
-//sino {
-//}
-//
-//si chi { }
-//
-//UnUReversa "hola mundo: " 1 ". hello, world"
-//EwEMedia (TwTPotencia 10 2) 10 4
+impwimir "UnUReversa(Hola, mundo!) = " UnUReversa "Hola, mundo!"
+impwimir "UnUReversa(num) = " UnUReversa num
+impwimir "TwTPotencia(10 2) = " TwTPotencia 10 2
+impwimir "owoValorTotal(-10) = " owoValorTotal -10
+impwimir "UwUMaximo(1 10 2 32 22 8 9) = " UwUMaximo 1 10 2 32 22 8 9
+impwimir "UnUMinimo(100 2 (--1) 40 (-130) 50 25) = " UnUMinimo 100 2 (--1) 40 (-130) 50 25
+impwimir "UwUCima(2.4287924) = " UwUCima 2.4287924
+impwimir "UnUSuelo(2.4287924) = " UnUSuelo 2.4287924
+impwimir "EwEMedia(10 20 30 40 50 60) = " EwEMedia 10 20 30 40 50 60
+impwimir "TwTSuma(1 2 3 4 5 6 7 8 9) = " TwTSuma 1 2 3 4 5 6 7 8 9
+impwimir "Palabra palindroma: OwOLazo(reconocer) = " OwOLazo "reconocer"
+impwimir "Anagrama: UnUMezcla(íman maní) = " UnUMezcla "íman" "maní"
+
+si boolean {
+    impwimir "chi"
+}
+sino {
+    impwimir "ño"
+}

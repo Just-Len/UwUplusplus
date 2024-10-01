@@ -3,8 +3,8 @@ from enum import Enum
 from tokenizer import *
 
 ExpressionType = Enum("ExpressionType", "Boolean Identifier If Number Nya Operation String")
-Operator = Enum("Operator", """And Bang DoubleEquals Equals GreaterEquals Group
-                                           LessEquals Minus Not Or Plus Slash Star
+Operator = Enum("Operator", """And Bang DoubleEquals Equals Greater GreaterEquals Group
+                                           Less LessEquals Minus Not Or Plus Slash Star
                                            Print UnUReversa TwTPotencia owoValorTotal UwUMaximo UnUMinimo
                                            UwUCima UnUSuelo EwEMedia TwTSuma OwOLazo UnUMezcla""")
 
@@ -75,7 +75,7 @@ class Parser:
 
         return expressions
 
-    def process_expression(self, token_iterator: CustomIterator, minimum_precedence: int, parenthesized: bool, argument_list = False) -> Result[Expression, ParserError] | None:
+    def process_expression(self, token_iterator: CustomIterator, minimum_precedence: int, parenthesized: bool, argument_list = False, block = False) -> Result[Expression, ParserError] | None:
         token = None
         token_kind = None
         while (token := token_iterator.peek()) is not None and token.kind == TokenKind.Eol:
@@ -92,7 +92,11 @@ class Parser:
 
             return parser_error_result("Expected a token.")
         elif token.kind == TokenKind.RightBrace:
-            return Result(Expression.create_nya())
+            if block:
+                return Result(Expression.create_nya())
+            else:
+                token_iterator.next()
+                return parser_error_result("Unexpected token.")
 
         token_iterator.next()
         match token.kind:
@@ -131,9 +135,11 @@ class Parser:
 
                 if_body: list[Expression] = []
                 while (next_token := token_iterator.peek()) is not None and next_token.kind != TokenKind.RightBrace:
-                    result = self.process_expression(token_iterator, 0, False)
+                    result = self.process_expression(token_iterator, 0, False, block = True)
                     if not result.is_ok:
                         return result
+                    elif result.value.type == ExpressionType.Nya:
+                        continue
 
                     if_body.append(result.value)
 
@@ -152,9 +158,11 @@ class Parser:
 
                     else_body = []
                     while (next_token := token_iterator.peek()) is not None and next_token.kind != TokenKind.RightBrace:
-                        result = self.process_expression(token_iterator, 0, False)
+                        result = self.process_expression(token_iterator, 0, False, block = True)
                         if not result.is_ok:
                             return result
+                        elif result.value.type == ExpressionType.Nya:
+                            continue
 
                         else_body.append(result.value)
 
@@ -191,19 +199,20 @@ class Parser:
                 inner_expression = inner_expression_result.value
                 left_expression = Result(Expression.create_operation(Operator.Group, [inner_expression]))
 
-            case TokenKeyword if token.original == NOT_KEYWORD:
+            case TokenKind.Keyword if token.original == NOT_KEYWORD:
                 operator_precedence = 10
-                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized)
+                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized, argument_list)
                 if not inner_expression_result.is_ok:
                     return inner_expression_result
 
                 inner_expression = inner_expression_result.value
                 left_expression = Result(Expression.create_operation(Operator.Not, [inner_expression]))
+
             case TokenKind.Bang | TokenKind.Minus | TokenKind.Keyword:
                 operator = Operator[token.kind.name]
                 operator_precedence = 10
 
-                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized)
+                inner_expression_result = self.process_expression(token_iterator, operator_precedence, parenthesized, argument_list)
                 if not inner_expression_result.is_ok:
                     return inner_expression_result
 
@@ -233,9 +242,9 @@ class Parser:
                     operator = Operator.Or
                 case TokenKind.Keyword if token.original == NOT_KEYWORD:
                     operator = Operator.Not
-                case TokenKind.DoubleEquals | TokenKind.Equals | TokenKind.GreaterEquals | \
-                        TokenKind.LessEquals | TokenKind.Minus | TokenKind.Plus | TokenKind.Slash | \
-                        TokenKind.Star:
+                case TokenKind.BangEquals | TokenKind.DoubleEquals | TokenKind.Equals | TokenKind.Greater | \
+                     TokenKind.GreaterEquals | TokenKind.Less | TokenKind.LessEquals | TokenKind.Minus | TokenKind.Plus | \
+                     TokenKind.Slash | TokenKind.Star:
                     operator = Operator[token.kind.name]
                 case _:
                     if argument_list:
@@ -248,7 +257,7 @@ class Parser:
                 break
 
             token_iterator.next()
-            right_expression_result = self.process_expression(token_iterator, operator_precedence[1], parenthesized)
+            right_expression_result = self.process_expression(token_iterator, operator_precedence[1], parenthesized, argument_list)
             if not right_expression_result.is_ok:
                 return right_expression_result
 

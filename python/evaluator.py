@@ -1,6 +1,6 @@
 import math
 import operator as python_operator
-from audioop import reverse
+import sys
 
 from parser import *
 from result import *
@@ -64,6 +64,9 @@ class Evaluator:
 
                 result = Result(value)
 
+            case ExpressionType.If:
+                result = self.process_if(expression)
+
             case ExpressionType.Operation:
                 match expression.operator:
                     case Operator.Group:
@@ -89,25 +92,42 @@ class Evaluator:
                             result = Result(ValueData.number_value(- operand_value_data.value))
 
                         else:
-                            result = self.process_binary_operation(expression, python_operator.sub)
+                            result = self.process_binary_operation(expression, python_operator.sub, ValueData.number_value)
 
                     case Operator.Plus:
-                        result = self.process_binary_operation(expression, python_operator.add)
+                        result = self.process_binary_operation(expression, python_operator.add, ValueData.number_value)
 
                     case Operator.Slash:
-                        result = self.process_binary_operation(expression, python_operator.truediv)
+                        result = self.process_binary_operation(expression, python_operator.truediv, ValueData.number_value)
 
                     case Operator.Star:
-                        result = self.process_binary_operation(expression, python_operator.mul)
+                        result = self.process_binary_operation(expression, python_operator.mul, ValueData.number_value)
 
                     case Operator.And:
-                        result = self.process_binary_operation(expression, python_operator.and_)
+                        result = self.process_binary_operation(expression, python_operator.and_, ValueData.boolean_value)
 
                     case Operator.Or:
-                        result = self.process_binary_operation(expression, python_operator.or_)
+                        result = self.process_binary_operation(expression, python_operator.or_, ValueData.boolean_value)
 
                     case Operator.Not:
-                        result = self.process_binary_operation(expression, python_operator.not_)
+                        result = self.process_n_ary_operation(expression,
+                                                              [ValueType.Boolean],
+                                                              1, python_operator.not_)
+
+                    case Operator.DoubleEquals:
+                        result = self.process_binary_operation(expression, python_operator.eq, ValueData.boolean_value)
+
+                    case Operator.Greater:
+                        result = self.process_binary_operation(expression, python_operator.gt, ValueData.boolean_value)
+
+                    case Operator.Less:
+                        result = self.process_binary_operation(expression, python_operator.lt, ValueData.boolean_value)
+
+                    case Operator.GreaterEquals:
+                        result = self.process_binary_operation(expression, python_operator.ge, ValueData.boolean_value)
+
+                    case Operator.LessEquals:
+                        result = self.process_binary_operation(expression, python_operator.le, ValueData.boolean_value)
 
                     case Operator.UnUReversa:
                         result = self.process_n_ary_operation(expression,
@@ -127,12 +147,12 @@ class Evaluator:
                     case Operator.UwUMaximo:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.Number],
-                                                              2, UwUMaximo, True)
+                                                              None, UwUMaximo)
 
                     case Operator.UnUMinimo:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.Number],
-                                                              2, UwUMinimo, True)
+                                                              None, UnUMinimo)
 
                     case Operator.UwUCima:
                         result = self.process_n_ary_operation(expression,
@@ -147,22 +167,22 @@ class Evaluator:
                     case Operator.EwEMedia:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.Number],
-                                                              2, EwEMedia, True)
+                                                              None, EwEMedia)
 
                     case Operator.TwTSuma:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.Number],
-                                                              2, TwTSuma, True)
+                                                              None, TwTSuma)
 
                     case Operator.OwOLazo:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.String],
-                                                              1,OwOLazo)
+                                                              1, OwOLazo)
 
                     case Operator.UnUMezcla:
                         result = self.process_n_ary_operation(expression,
                                                               [ValueType.String],
-                                                              2,UnUMezcla)
+                                                              2, UnUMezcla)
 
 
         return result
@@ -183,7 +203,7 @@ class Evaluator:
         self.variables[variable_name] = value_data
         return actual_value_result
 
-    def process_binary_operation(self, expression: Expression, operator) -> Result[ValueData, EvaluatorError]:
+    def process_binary_operation(self, expression: Expression, operator, value_data_constructor) -> Result[ValueData, EvaluatorError]:
         operand_count = len(expression.operands)
         if operand_count != 2:
             # Is this even possible?
@@ -205,12 +225,12 @@ class Evaluator:
         if left_value_data.type != right_value_data.type:
             return evaluator_error_result(f'Operand types do not match for binary operation. Got {left_value_data.type.name} and {right_value_data.type.name}.')
 
-        return Result(ValueData.number_value(operator(left_value_data.value, right_value_data.value)))
+        return Result(value_data_constructor(operator(left_value_data.value, right_value_data.value)))
 
     def process_n_ary_operation(self, expression: Expression, expected_operand_types: list[ValueType],
-                                expected_operand_count: int | None, built_in_function, multi_value = False) -> Result[ValueData, EvaluatorError]:
+                                expected_operand_count: int | None, built_in_function) -> Result[ValueData, EvaluatorError]:
         operand_count = len(expression.operands)
-        if (expected_operand_count is not None and operand_count != expected_operand_count) and not multi_value:
+        if expected_operand_count is not None and operand_count != expected_operand_count:
             return evaluator_error_result(f'Invalid number of arguments for {expression.type.name}. Expected {expected_operand_count}, got {operand_count}.')
 
         index = 0
@@ -229,102 +249,127 @@ class Evaluator:
 
             operand_values_data.append(operand_value_result.value)
 
-        built_in_function_arguments = []
-        if expected_operand_count == 1:
-            built_in_function_arguments = operand_values_data[0]
-            return Result(ValueData(built_in_function(built_in_function_arguments), built_in_function_arguments.type))
+        return Result(built_in_function(*operand_values_data))
+
+    def process_if(self, expression: Expression) -> Result[ValueData, EvaluatorError]:
+        condition_result = self.process_expression(expression.condition)
+        if not condition_result.is_ok:
+            return condition_result
+
+        condition_value_data = condition_result.value
+        if condition_value_data.type != ValueType.Boolean:
+            return evaluator_error_result(f'Invalid value type for if condition. Expected Boolean, got {condition_value_data.type.name}.')
+
+        body: list[Expression]
+        body_expression_result = Result(ValueData.nya_value())
+        if condition_value_data.value:
+            body = expression.if_body
+        elif expression.else_body is not None:
+            body = expression.else_body
         else:
-            built_in_function_arguments = operand_values_data
-            return Result(ValueData(built_in_function(*built_in_function_arguments), built_in_function_arguments[0].type))
+            return body_expression_result
 
+        for body_expression in body:
+            body_expression_result = self.process_expression(body_expression)
+            if not body_expression_result.is_ok:
+                return body_expression_result
 
+        return body_expression_result
 
-    def process_print(self, expression: Expression):
+    def process_print(self, expression: Expression) -> Result[ValueData, EvaluatorError]:
         for argument in expression.operands:
             argument_value_result = self.process_expression(argument)
             if not argument_value_result.is_ok:
                 return argument_value_result
 
             value_data = argument_value_result.value
-            print(value_data.value, sep = None)
+            value = value_data.value
+            if value_data.type == ValueType.Boolean:
+                value = "chi" if value else "ño"
+
+            print(value, end = "")
+
+        print()
+        return Result(ValueData.nya_value())
 
 
 def evaluator_error_result(message: str) -> Result[any, EvaluatorError]:
     return Result(error = EvaluatorError(message))
 
 
-def UnUReversa(value_data: ValueData) -> any:
+def UnUReversa(value_data: ValueData) -> ValueData:
     actual_value = value_data.value
     if value_data.type == ValueType.Number:
-        return UnUReversa_number(actual_value)
+        return ValueData.number_value(UnUReversa_number(actual_value))
     elif value_data.type == ValueType.String:
-        return UnUReversa_string(actual_value)
+        return ValueData.string_value(UnUReversa_string(actual_value))
 
     raise RuntimeError("Invalid value type for UnUReversa function.")
 
 
-def UnUReversa_string(value: str):
+def UnUReversa_string(value: str) -> str:
     return value[::-1]
 
 
-def UnUReversa_number(value: float):
+def UnUReversa_number(value: float) -> float:
     reverse_number = 0
     while value > 0:
         digit = value % 10
         reverse_number = reverse_number * 10 + digit
         value //= 10
+
     return reverse_number
 
-def TwTPotencia(value_number: ValueData, value_power: ValueData) -> any:
+def TwTPotencia(value_number: ValueData, value_power: ValueData) -> ValueData:
     actual_value_number = value_number.value
     actual_value_power = value_power.value
-    return actual_value_number ** actual_value_power
+    return ValueData.number_value(actual_value_number ** actual_value_power)
 
-def owoValorTotal(value_data: ValueData) -> any:
-    return abs(value_data.value)
+def owoValorTotal(value_data: ValueData) -> ValueData:
+    return ValueData.number_value(abs(value_data.value))
 
-def UwUMaximo(*numbers: ValueData) -> any:
+def UwUMaximo(*numbers: ValueData) -> ValueData:
     max_value = 0
     for number in numbers:
         if number.value > max_value:
             max_value = number.value
 
-    return max_value
+    return ValueData.number_value(max_value)
 
-def UwUMinimo(*numbers: ValueData) -> any:
-    min_value = 0
+def UnUMinimo(*numbers: ValueData) -> ValueData:
+    min_value = sys.float_info.max
     for number in numbers:
         if number.value < min_value:
             min_value = number.value
 
-    return min_value
+    return ValueData.number_value(min_value)
 
-def UwUCima(value_data: ValueData) -> any:
-    return math.ceil(value_data.value)
+def UwUCima(value_data: ValueData) -> ValueData:
+    return ValueData.number_value(math.ceil(value_data.value))
 
-def UnUSuelo(value_data: ValueData) -> any:
-    return math.floor(value_data.value)
+def UnUSuelo(value_data: ValueData) -> ValueData:
+    return ValueData.number_value(math.floor(value_data.value))
 
-def EwEMedia(*numbers: ValueData) -> any:
+def EwEMedia(*numbers: ValueData) -> ValueData:
     total = 0
     for number in numbers:
         total += number.value
 
-    return total / len(numbers)
+    return ValueData.number_value(total / len(numbers))
 
-def TwTSuma(*numbers: ValueData) -> any:
+def TwTSuma(*numbers: ValueData) -> ValueData:
     total = 0
     for number in numbers:
         total += number.value
 
-    return total
+    return ValueData.number_value(total)
 
-def OwOLazo(value_data: ValueData) -> any:
+def OwOLazo(value_data: ValueData) -> ValueData:
     if value_data.value.lower() == value_data.value[::-1].lower():
-        return "Chi"
-    return "Ño"
+        return ValueData.boolean_value(True)
+    return ValueData.boolean_value(False)
 
-def UnUMezcla(first_value_data: ValueData, second_value_data: ValueData) -> any:
+def UnUMezcla(first_value_data: ValueData, second_value_data: ValueData) -> ValueData:
     if sorted(first_value_data.value.lower()) == sorted(second_value_data.value.lower()):
-        return "Chi"
-    return "Ño"
+        return ValueData.boolean_value(True)
+    return ValueData.boolean_value(False)
